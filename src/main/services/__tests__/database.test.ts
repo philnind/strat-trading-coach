@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseService } from '../database';
-import type { Trade, Conversation, Message } from '@shared/models';
+import type { Conversation } from '@shared/models';
 
 describe('DatabaseService', () => {
   let db: DatabaseService;

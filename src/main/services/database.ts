@@ -375,19 +375,19 @@ export class DatabaseService {
     return {
       id: row.id,
       ticker: row.ticker,
-      direction: row.direction,
+      direction: row.direction as 'long' | 'short',
       entry: row.entry,
-      exit: row.exit,
-      stopLoss: row.stop_loss,
-      takeProfit: row.take_profit,
+      exit: row.exit ?? undefined,
+      stopLoss: row.stop_loss ?? undefined,
+      takeProfit: row.take_profit ?? undefined,
       quantity: row.quantity,
-      notes: row.notes,
-      screenshotPath: row.screenshot_path,
+      notes: row.notes ?? undefined,
+      screenshotPath: row.screenshot_path ?? undefined,
       stratSetup: row.strat_setup,
       timeframe: row.timeframe,
       entryTimestamp: row.entry_timestamp,
-      exitTimestamp: row.exit_timestamp,
-      pnl: row.pnl,
+      exitTimestamp: row.exit_timestamp ?? undefined,
+      pnl: row.pnl ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
@@ -397,7 +397,7 @@ export class DatabaseService {
     return {
       id: row.id,
       title: row.title,
-      tradeId: row.trade_id,
+      tradeId: row.trade_id ?? undefined,
       messageCount: row.message_count,
       lastMessageAt: row.last_message_at,
       createdAt: row.created_at
@@ -408,10 +408,10 @@ export class DatabaseService {
     return {
       id: row.id,
       conversationId: row.conversation_id,
-      role: row.role,
+      role: row.role as 'user' | 'assistant',
       content: row.content,
-      screenshotPath: row.screenshot_path,
-      tokens: row.tokens,
+      screenshotPath: row.screenshot_path ?? undefined,
+      tokens: row.tokens ?? undefined,
       cached: row.cached === 1,
       createdAt: row.created_at
     };
