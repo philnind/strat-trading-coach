@@ -19,7 +19,6 @@ export default defineConfig(({ command }) => {
         '@': path.join(__dirname, 'src/renderer/src')
       },
     },
-    root: 'src/renderer',
     plugins: [
       react(),
       electron({
