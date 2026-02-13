@@ -126,6 +126,10 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(IPC_CHANNELS.SCREENSHOT_CAPTURE, request);
   },
 
+  getScreenshotDataUrl: (id: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SCREENSHOT_GET_DATA_URL, id);
+  },
+
   // ============================================================
   // Settings API
   // ============================================================

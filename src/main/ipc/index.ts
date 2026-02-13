@@ -409,6 +409,7 @@ export function registerIpcHandlers(): void {
             size: result.fileSize,
             timestamp: Date.now(),
           },
+          id: result.id, // Add ID for data URL lookup
         };
       } catch (error) {
         console.error('[IPC] Screenshot capture failed:', error);
@@ -417,6 +418,14 @@ export function registerIpcHandlers(): void {
           error: error instanceof Error ? error.message : 'Screenshot capture failed',
         };
       }
+    }
+  );
+
+  handleWithValidation<string, string>(
+    IPC_CHANNELS.SCREENSHOT_GET_DATA_URL,
+    async (id) => {
+      const service = getScreenshotService();
+      return await service.getScreenshotDataUrl(id);
     }
   );
 

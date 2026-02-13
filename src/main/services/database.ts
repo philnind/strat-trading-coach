@@ -96,9 +96,13 @@ export class DatabaseService {
     // Find migration files
     const migrationsDir = path.join(
       process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, '../../../resources/migrations')
+        ? path.join(__dirname, '../../resources/migrations')
         : path.join(process.resourcesPath, 'migrations')
     );
+
+    console.warn('[Database] __dirname:', __dirname);
+    console.warn('[Database] Migrations directory:', migrationsDir);
+    console.warn('[Database] Directory exists:', fs.existsSync(migrationsDir));
 
     if (!fs.existsSync(migrationsDir)) {
       console.warn(`Migrations directory not found: ${migrationsDir}`);
@@ -110,6 +114,8 @@ export class DatabaseService {
       .readdirSync(migrationsDir)
       .filter((f) => f.endsWith('.sql'))
       .sort();
+
+    console.warn('[Database] Found migration files:', migrationFiles);
 
     // Apply unapplied migrations
     for (const file of migrationFiles) {

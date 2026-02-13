@@ -34,6 +34,7 @@ export const IPC_CHANNELS = {
 
   // Screenshot
   SCREENSHOT_CAPTURE: 'screenshot:capture',
+  SCREENSHOT_GET_DATA_URL: 'screenshot:get-data-url',
 
   // Settings
   SETTINGS_GET: 'settings:get',
@@ -143,6 +144,7 @@ export interface CaptureScreenshotResponse {
   success: boolean;
   filePath?: string;
   metadata?: ScreenshotMetadata;
+  id?: string; // Screenshot ID for data URL lookup
   error?: string;
 }
 
@@ -203,6 +205,7 @@ export interface ElectronAPI {
   captureScreenshot: (
     request?: CaptureScreenshotRequest
   ) => Promise<CaptureScreenshotResponse>;
+  getScreenshotDataUrl: (id: string) => Promise<string>;
 
   // Settings
   getSettings: () => Promise<AppSettings>;
