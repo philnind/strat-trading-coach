@@ -28,7 +28,7 @@ export function StreamingMessage({ message }: StreamingMessageProps): React.Reac
       <div className="flex max-w-[70%] flex-col gap-1 items-start">
         {/* Message Bubble */}
         <div className="rounded-lg px-4 py-2 bg-zinc-800 text-zinc-100">
-          <div className="prose prose-invert prose-sm max-w-none">
+          <div className="prose prose-invert prose-sm max-w-none break-words">
             {message.content ? (
               <div className="flex items-start">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>

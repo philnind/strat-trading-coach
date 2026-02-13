@@ -49,9 +49,9 @@ export function MessageBubble({ message, showTimestamp = false }: MessageBubbleP
 
           {/* Content */}
           {isUser ? (
-            <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
           ) : (
-            <div className="prose prose-invert prose-sm max-w-none">
+            <div className="prose prose-invert prose-sm max-w-none break-words">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {message.content}
               </ReactMarkdown>
@@ -60,23 +60,16 @@ export function MessageBubble({ message, showTimestamp = false }: MessageBubbleP
         </div>
 
         {/* Metadata */}
-        <div className="flex items-center gap-2 px-1 text-xs text-zinc-500">
-          {showTimestamp && (
+        {showTimestamp && (
+          <div className="px-1 text-xs text-zinc-500">
             <span>
               {new Date(message.createdAt).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
               })}
             </span>
-          )}
-          {message.tokens && (
-            <span className="flex items-center gap-1">
-              <span>•</span>
-              <span>{message.tokens} tokens</span>
-              {message.cached && <span>(cached)</span>}
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Avatar (right side for user) */}
