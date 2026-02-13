@@ -1,0 +1,9 @@
+dist
+dist-electron
+release
+node_modules
+out
+.vite
+coverage
+pnpm-lock.yaml
+package-lock.json
