@@ -5,6 +5,10 @@
 
 import { BaseWindow, WebContentsView, session, screen } from 'electron';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// ES module equivalent of __dirname
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow: BaseWindow | null = null;
 let tradingViewView: WebContentsView | null = null;
