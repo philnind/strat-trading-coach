@@ -34,7 +34,7 @@ export function ChatPanel(): React.ReactElement {
     <div className="flex flex-1 flex-col">
       {/* Error Banner */}
       {error && (
-        <div className="border-b border-red-900 bg-red-950/50 p-3">
+        <div className="border-b border-red-900 bg-red-950/50 p-3" role="alert">
           <div className="mx-auto flex w-full items-center justify-between px-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-red-400">{error}</span>
@@ -65,6 +65,7 @@ export function ChatPanel(): React.ReactElement {
         messages={messages}
         streamingMessage={streamingMessage}
         isLoadingMessages={isLoadingMessages}
+        onSendExample={(message) => sendMessage(message, false)}
       />
 
       {/* Input Bar */}

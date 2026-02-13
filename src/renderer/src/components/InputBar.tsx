@@ -76,20 +76,28 @@ export function InputBar({
     <div className="border-t border-zinc-800 bg-zinc-900 p-4">
       <div className="mx-auto w-full">
         {/* Screenshot Preview */}
-        {screenshot && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 p-2">
-            <div className="flex-1 flex items-center gap-2">
-              <Camera className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-zinc-400">
-                Chart screenshot ({screenshot.metadata?.width}x{screenshot.metadata?.height})
-              </span>
+        {screenshot && screenshot.dataUrl && (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 p-2">
+            {/* Thumbnail */}
+            <img
+              src={screenshot.dataUrl}
+              alt="Chart screenshot preview"
+              className="h-16 w-24 rounded border border-zinc-700 object-cover"
+            />
+            {/* Info */}
+            <div className="flex-1">
+              <p className="text-sm text-zinc-200">Chart screenshot</p>
+              <p className="text-xs text-zinc-400">
+                {screenshot.metadata?.width}×{screenshot.metadata?.height}
+              </p>
             </div>
+            {/* Remove button */}
             <button
               onClick={clearScreenshot}
-              className="rounded-md p-1 hover:bg-zinc-700 transition-colors"
+              className="text-zinc-400 hover:text-zinc-100 transition-colors"
               aria-label="Remove screenshot"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         )}
@@ -107,21 +115,31 @@ export function InputBar({
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             aria-label={screenshot ? 'Remove screenshot' : 'Capture screenshot'}
           >
-            <Camera className="h-6 w-6" />
+            {isCapturing ? (
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+            ) : (
+              <Camera className="h-6 w-6" />
+            )}
           </button>
 
           {/* Text Input */}
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={1}
-            className="flex-1 resize-none rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm placeholder-zinc-500 focus:border-zinc-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ minHeight: '42px', maxHeight: '150px' }}
-          />
+          <div className="flex-1">
+            <label htmlFor="chat-input" className="sr-only">
+              Message
+            </label>
+            <textarea
+              id="chat-input"
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              disabled={disabled}
+              rows={1}
+              className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm placeholder-zinc-500 focus:border-zinc-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ minHeight: '42px', maxHeight: '150px' }}
+            />
+          </div>
 
           {/* Send Button */}
           <button

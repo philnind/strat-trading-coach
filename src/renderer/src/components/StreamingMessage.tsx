@@ -52,7 +52,9 @@ export function StreamingMessage({ message }: StreamingMessageProps): React.Reac
             <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" style={{ animationDelay: '150ms' }} />
             <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" style={{ animationDelay: '300ms' }} />
           </div>
-          <span>Streaming...</span>
+          <span>
+            Streaming... ({message.content.split(/\s+/).filter(Boolean).length} words)
+          </span>
         </div>
       </div>
     </div>

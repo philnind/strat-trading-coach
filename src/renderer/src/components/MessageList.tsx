@@ -14,12 +14,14 @@ interface MessageListProps {
   messages: Message[]
   streamingMessage: StreamingMessageType | null
   isLoadingMessages?: boolean
+  onSendExample?: (message: string) => void
 }
 
 export function MessageList({
   messages,
   streamingMessage,
   isLoadingMessages = false,
+  onSendExample,
 }: MessageListProps): React.ReactElement {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -37,18 +39,37 @@ export function MessageList({
    * Empty state
    */
   if (!isLoadingMessages && messages.length === 0 && !streamingMessage) {
+    const examplePrompts = [
+      "Analyze this 2-2 reversal pattern",
+      "What timeframes work best for The Strat?",
+      "Explain a 3-inside setup",
+      "How do I identify actionable signals?",
+    ]
+
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <div className="mx-auto max-w-md text-center">
-          <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-900 p-6">
-            <h2 className="mb-2 text-lg font-semibold">Welcome to STRAT Monitor</h2>
+        <div className="mx-auto max-w-2xl w-full">
+          <div className="mb-6 text-center">
+            <h2 className="mb-2 text-xl font-semibold">Welcome to STRAT Monitor</h2>
             <p className="text-sm text-zinc-400">
               Your AI-powered trading coach for The Strat methodology
             </p>
-            <p className="mt-4 text-xs text-zinc-500">
-              Start by asking questions about chart patterns, capturing a screenshot, or
-              journaling your trades
-            </p>
+          </div>
+
+          {/* Example Prompts */}
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-500 mb-3">Try asking:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {examplePrompts.map((prompt, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSendExample?.(prompt)}
+                  className="text-left rounded-lg border border-zinc-700 bg-zinc-800 p-3 text-sm hover:bg-zinc-700 hover:border-zinc-600 transition-colors"
+                >
+                  <span className="text-zinc-300">{prompt}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
