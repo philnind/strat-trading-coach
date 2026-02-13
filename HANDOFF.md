@@ -1,7 +1,7 @@
 # Handoff: STRAT Monitor - AI Trading Coach
 
 **Last Session:** 2026-02-13
-**Status:** Epic 1 Complete - Ready for Epic 2
+**Status:** ✅ Epic 1 Complete & Verified - Ready for Epic 2
 **Session:** Session 1 - Project Scaffolding
 
 ---
@@ -29,7 +29,7 @@ All 11 tasks completed successfully:
 - ✅ TypeScript compilation: Zero errors (`npm run typecheck`)
 - ✅ ESLint: Zero warnings (`npm run lint`)
 - ✅ Git: Repository initialized with proper .gitignore
-- ⏳ Dev server launch: **Needs manual verification by Phil**
+- ✅ Dev server launch: Verified working with HMR
 
 ### Key Configuration Changes
 
@@ -91,15 +91,19 @@ resources/
 **Solution:** Added template directories to ESLint ignore list - will be replaced in Epic 2
 **Lesson:** Don't spend time fixing template code that will be deleted
 
+### 5. Vite Module Resolution After Directory Restructure
+**Problem:** After moving renderer to `src/renderer/src/`, Vite couldn't find `/src/main.tsx`
+**Solution:**
+- Updated `index.html`: `/src/main.tsx` → `/src/renderer/src/main.tsx`
+- Updated `vite.config.ts` alias: `'@': path.join(__dirname, 'src/renderer/src')`
+- Avoided setting custom `root` in Vite config (broke Electron main entry resolution)
+**Lesson:** When restructuring directories, update both HTML entry points AND build tool aliases
+
 ## Blockers / Open Questions
 
-### Critical Manual Verification Needed
+**None** - Epic 1 is complete and verified working
 
-**Phil must verify:** `npm run dev` successfully launches the app
-- Expected: Vite dev server starts, Electron window opens with template React app
-- If fails: Check error messages, may need vite.config.ts adjustment for new structure
-
-**No other blockers** - Epic 1 is structurally complete
+All quality gates passed including dev server launch verification.
 
 ## Next Steps
 
@@ -170,7 +174,8 @@ Estimated effort: 2 sessions (4-6 hours)
 - ✅ shadcn/ui initialized and ready for component installation
 - ✅ Directory structure matches architecture plan
 - ✅ Quality gates passing (TypeScript, ESLint)
-- ✅ Git repository initialized with 2 commits
+- ✅ Git repository initialized with 5 commits
+- ✅ Dev server launches successfully with HMR working
 
 **What's Not Started Yet:**
 - ❌ Main process Electron code (Epic 2)
@@ -216,16 +221,18 @@ git checkout main
 
 **Achievements:**
 - 🎉 Epic 1 complete in single session (~2 hours)
-- 🎉 All 11 scaffolding tasks done
-- 🎉 Quality gates passed (TypeScript + ESLint)
+- 🎉 All 11 scaffolding tasks done and verified
+- 🎉 All quality gates passed (TypeScript + ESLint + Dev Server)
 - 🎉 Modern stack: React 19, TypeScript 5.x, Tailwind v4, shadcn/ui
 - 🎉 Project structure matches architecture plan perfectly
+- 🎉 5 git commits with clean history
 
 **Challenges Overcome:**
 - React 19 type compatibility (Modal component)
 - Tailwind v4 migration (new @import syntax)
 - ESLint peer dependency conflicts
 - Directory restructuring (src/ → src/renderer/src/)
+- Vite module resolution after directory move
 
 **Ready For:**
 - Epic 2: Core Architecture - building the Electron main process, WebContentsView split-pane, and IPC layer
