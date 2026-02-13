@@ -66,10 +66,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
           <h2 className="text-lg font-semibold">Settings</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+            className="text-zinc-400 hover:text-zinc-100 transition-colors"
             aria-label="Close settings"
           >
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           </button>
         </div>
 
@@ -140,15 +140,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
           {/* Split Ratio Section */}
           <div className="space-y-3">
             <label className="text-sm font-medium">TradingView Panel Width</label>
-            <div className="space-y-2">
+            <div className="flex gap-2">
               {[
-                { value: 0.5, label: '50% - Balanced' },
-                { value: 0.6, label: '60% - Chart Focus (Recommended)' },
-                { value: 0.7, label: '70% - Wide Chart' },
+                { value: 0.5, label: '50%' },
+                { value: 0.6, label: '60%' },
+                { value: 0.7, label: '70%' },
               ].map((option) => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-800 p-2 cursor-pointer hover:border-zinc-600 transition-colors"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-800 p-2 cursor-pointer hover:border-zinc-600 transition-colors"
                 >
                   <input
                     type="radio"

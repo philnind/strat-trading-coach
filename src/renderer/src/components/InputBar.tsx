@@ -95,19 +95,19 @@ export function InputBar({
         )}
 
         {/* Input Row */}
-        <div className="flex gap-2">
+        <div className="flex gap-3 items-center">
           {/* Screenshot Button */}
           <button
             onClick={handleScreenshotClick}
             disabled={disabled || isCapturing}
-            className={`flex-shrink-0 rounded-md p-2 transition-colors ${
+            className={`flex-shrink-0 transition-colors ${
               screenshot
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                ? 'text-blue-500 hover:text-blue-400'
+                : 'text-zinc-400 hover:text-zinc-100'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             aria-label={screenshot ? 'Remove screenshot' : 'Capture screenshot'}
           >
-            <Camera className="h-5 w-5" />
+            <Camera className="h-6 w-6" />
           </button>
 
           {/* Text Input */}
@@ -127,10 +127,10 @@ export function InputBar({
           <button
             onClick={handleSend}
             disabled={disabled || !message.trim()}
-            className="flex-shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-shrink-0 text-blue-500 hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             aria-label="Send message"
           >
-            <Send className="h-5 w-5 text-white" />
+            <Send className="h-6 w-6" />
           </button>
         </div>
 

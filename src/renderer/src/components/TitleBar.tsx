@@ -39,10 +39,10 @@ export function TitleBar({ onSettingsClick }: TitleBarProps): React.ReactElement
         {/* Settings Button */}
         <button
           onClick={onSettingsClick}
-          className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+          className="text-zinc-400 hover:text-zinc-100 transition-colors"
           aria-label="Settings"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="h-5 w-5" />
         </button>
       </div>
     </header>
