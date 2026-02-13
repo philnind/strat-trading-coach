@@ -7,6 +7,7 @@ import Database from 'better-sqlite3';
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import type { Trade, Conversation, Message } from '@shared/models';
 
@@ -367,6 +368,136 @@ export class DatabaseService {
       WHERE id = ?
     `);
     updateConv.run(message.conversationId);
+  }
+
+  // ---- Screenshot Operations ----
+
+  createScreenshot(data: {
+    filePath: string;
+    width: number;
+    height: number;
+    fileSize: number;
+    tradeId?: string;
+    messageId?: string;
+  }): string {
+    const id = crypto.randomUUID();
+    const stmt = this.db.prepare(`
+      INSERT INTO screenshots (id, file_path, width, height, file_size, trade_id, message_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `);
+
+    stmt.run(
+      id,
+      data.filePath,
+      data.width,
+      data.height,
+      data.fileSize,
+      data.tradeId ?? null,
+      data.messageId ?? null
+    );
+
+    return id;
+  }
+
+  getScreenshot(id: string): {
+    id: string;
+    filePath: string;
+    width: number;
+    height: number;
+    fileSize: number;
+    tradeId?: string;
+    messageId?: string;
+    createdAt: Date;
+  } | undefined {
+    const stmt = this.db.prepare('SELECT * FROM screenshots WHERE id = ?');
+    const row = stmt.get(id) as {
+      id: string;
+      file_path: string;
+      width: number;
+      height: number;
+      file_size: number;
+      trade_id: string | null;
+      message_id: string | null;
+      created_at: string;
+    } | undefined;
+
+    if (!row) return undefined;
+
+    return {
+      id: row.id,
+      filePath: row.file_path,
+      width: row.width,
+      height: row.height,
+      fileSize: row.file_size,
+      tradeId: row.trade_id ?? undefined,
+      messageId: row.message_id ?? undefined,
+      createdAt: new Date(row.created_at)
+    };
+  }
+
+  listScreenshots(options: {
+    tradeId?: string;
+    messageId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Array<{
+    id: string;
+    filePath: string;
+    width: number;
+    height: number;
+    fileSize: number;
+    tradeId?: string;
+    messageId?: string;
+    createdAt: Date;
+  }> {
+    const { tradeId, messageId, limit = 50, offset = 0 } = options;
+    let query = 'SELECT * FROM screenshots WHERE 1=1';
+    const params: (string | number)[] = [];
+
+    if (tradeId) {
+      query += ' AND trade_id = ?';
+      params.push(tradeId);
+    }
+
+    if (messageId) {
+      query += ' AND message_id = ?';
+      params.push(messageId);
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(...params) as Array<{
+      id: string;
+      file_path: string;
+      width: number;
+      height: number;
+      file_size: number;
+      trade_id: string | null;
+      message_id: string | null;
+      created_at: string;
+    }>;
+
+    return rows.map(row => ({
+      id: row.id,
+      filePath: row.file_path,
+      width: row.width,
+      height: row.height,
+      fileSize: row.file_size,
+      tradeId: row.trade_id ?? undefined,
+      messageId: row.message_id ?? undefined,
+      createdAt: new Date(row.created_at)
+    }));
+  }
+
+  deleteScreenshot(id: string): void {
+    const stmt = this.db.prepare('DELETE FROM screenshots WHERE id = ?');
+    const result = stmt.run(id);
+
+    if (result.changes === 0) {
+      throw new Error(`Screenshot not found: ${id}`);
+    }
   }
 
   // ---- Helper Methods ----

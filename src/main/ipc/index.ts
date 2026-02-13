@@ -25,12 +25,14 @@ import { setSplitRatio, getSplitRatio, getMainWindow, getChatView } from '../win
 import { DatabaseService } from '../services/database';
 import { ClaudeService } from '../services/claude';
 import { SecureStoreService } from '../services/secure-store';
+import { ScreenshotService } from '../services/screenshot';
 import type { Trade, Conversation, Message } from '@shared/models';
 
 // Singleton service instances
 let db: DatabaseService | null = null;
 let claude: ClaudeService | null = null;
 let secureStore: SecureStoreService | null = null;
+let screenshot: ScreenshotService | null = null;
 
 /**
  * Get or create the database service instance
@@ -60,6 +62,16 @@ function getSecureStore(): SecureStoreService {
     secureStore = new SecureStoreService();
   }
   return secureStore;
+}
+
+/**
+ * Get or create the screenshot service instance
+ */
+function getScreenshotService(): ScreenshotService {
+  if (!screenshot) {
+    screenshot = new ScreenshotService(getDatabase());
+  }
+  return screenshot;
 }
 
 /**
@@ -378,9 +390,33 @@ export function registerIpcHandlers(): void {
   // ============================================================
   handleWithValidation<CaptureScreenshotRequest | undefined, unknown>(
     IPC_CHANNELS.SCREENSHOT_CAPTURE,
-    async (_request) => {
-      // TODO: Epic 5 - Implement screenshot capture
-      throw new Error('Screenshot capture not yet implemented (Epic 5)');
+    async (request) => {
+      const service = getScreenshotService();
+
+      try {
+        const result = await service.captureScreenshot({
+          tradeId: request?.tradeId,
+          messageId: request?.messageId,
+        });
+
+        return {
+          success: true,
+          filePath: result.filePath,
+          metadata: {
+            path: result.filePath,
+            width: result.width,
+            height: result.height,
+            size: result.fileSize,
+            timestamp: Date.now(),
+          },
+        };
+      } catch (error) {
+        console.error('[IPC] Screenshot capture failed:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Screenshot capture failed',
+        };
+      }
     }
   );
 
@@ -498,4 +534,7 @@ export function cleanupIpcResources(): void {
     db.close();
     db = null;
   }
+  claude = null;
+  secureStore = null;
+  screenshot = null;
 }

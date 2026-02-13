@@ -135,12 +135,15 @@ export interface GetMessagesResponse {
 // Screenshot
 export interface CaptureScreenshotRequest {
   includeMetadata?: boolean;
+  tradeId?: string;
+  messageId?: string;
 }
 
 export interface CaptureScreenshotResponse {
-  base64: string;
-  path: string;
+  success: boolean;
+  filePath?: string;
   metadata?: ScreenshotMetadata;
+  error?: string;
 }
 
 // Settings
