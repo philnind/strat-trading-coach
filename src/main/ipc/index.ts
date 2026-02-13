@@ -9,14 +9,31 @@ import type {
   CreateTradeRequest,
   UpdateTradeRequest,
   ListTradesRequest,
+  ListTradesResponse,
   CreateConversationRequest,
   GetMessagesRequest,
+  GetMessagesResponse,
   CaptureScreenshotRequest,
   UpdateSettingsRequest,
   SetSplitRatioRequest,
 } from '@shared/ipc-types';
 import { IPC_CHANNELS } from '@shared/ipc-types';
 import { setSplitRatio, getSplitRatio, getMainWindow } from '../window';
+import { DatabaseService } from '../services/database';
+import type { Trade, Conversation, Message } from '@shared/models';
+
+// Singleton database instance
+let db: DatabaseService | null = null;
+
+/**
+ * Get or create the database service instance
+ */
+function getDatabase(): DatabaseService {
+  if (!db) {
+    db = new DatabaseService();
+  }
+  return db;
+}
 
 /**
  * Validate that IPC messages come from our renderer, not TradingView
@@ -87,75 +104,129 @@ export function registerIpcHandlers(): void {
   // ============================================================
   // Database - Trades (Epic 3)
   // ============================================================
-  handleWithValidation<CreateTradeRequest, unknown>(
+  handleWithValidation<CreateTradeRequest, Trade>(
     IPC_CHANNELS.DB_CREATE_TRADE,
-    async (_request) => {
-      // TODO: Epic 3 - Implement database
-      throw new Error('Database not yet implemented (Epic 3)');
+    async (request) => {
+      const database = getDatabase();
+      const trade = database.createTrade({
+        ticker: request.ticker,
+        direction: request.direction,
+        entry: request.entry,
+        exit: undefined,
+        stopLoss: request.stopLoss,
+        takeProfit: request.takeProfit,
+        quantity: request.quantity,
+        notes: request.notes,
+        screenshotPath: request.screenshotPath,
+        stratSetup: request.stratSetup,
+        timeframe: request.timeframe,
+        entryTimestamp: Date.now(),
+        exitTimestamp: undefined,
+        pnl: undefined,
+      });
+      return trade;
     }
   );
 
-  handleWithValidation<UpdateTradeRequest, unknown>(
+  handleWithValidation<UpdateTradeRequest, Trade>(
     IPC_CHANNELS.DB_UPDATE_TRADE,
-    async (_request) => {
-      throw new Error('Database not yet implemented (Epic 3)');
+    async (request) => {
+      const database = getDatabase();
+      const updated = database.updateTrade(request.id, {
+        exit: request.exit,
+        notes: request.notes,
+        pnl: request.pnl,
+        exitTimestamp: request.exit ? Date.now() : undefined,
+      });
+      return updated;
     }
   );
 
-  handleWithValidation<string, unknown>(IPC_CHANNELS.DB_GET_TRADE, async (_id) => {
-    throw new Error('Database not yet implemented (Epic 3)');
+  handleWithValidation<string, Trade | null>(IPC_CHANNELS.DB_GET_TRADE, async (id) => {
+    const database = getDatabase();
+    return database.getTrade(id);
   });
 
-  handleWithValidation<ListTradesRequest | undefined, unknown>(
+  handleWithValidation<ListTradesRequest | undefined, ListTradesResponse>(
     IPC_CHANNELS.DB_LIST_TRADES,
-    async (_request) => {
-      return { trades: [], total: 0 };
+    async (request) => {
+      const database = getDatabase();
+      const limit = request?.limit ?? 100;
+      const offset = request?.offset ?? 0;
+
+      const trades = database.listTrades(limit, offset);
+
+      // TODO: Implement ticker filtering if needed
+      // For now, return all trades
+      return { trades, total: trades.length };
     }
   );
 
-  handleWithValidation<string, void>(IPC_CHANNELS.DB_DELETE_TRADE, async (_id) => {
-    throw new Error('Database not yet implemented (Epic 3)');
+  handleWithValidation<string, void>(IPC_CHANNELS.DB_DELETE_TRADE, async (id) => {
+    const database = getDatabase();
+    database.deleteTrade(id);
   });
 
   // ============================================================
   // Database - Conversations (Epic 3)
   // ============================================================
-  handleWithValidation<CreateConversationRequest, unknown>(
+  handleWithValidation<CreateConversationRequest, Conversation>(
     IPC_CHANNELS.DB_CREATE_CONVERSATION,
-    async (_request) => {
-      throw new Error('Database not yet implemented (Epic 3)');
+    async (request) => {
+      const database = getDatabase();
+      const conversation = database.createConversation({
+        title: request.title,
+        tradeId: request.tradeId,
+      });
+      return conversation;
     }
   );
 
-  handleWithValidation<string, unknown>(IPC_CHANNELS.DB_GET_CONVERSATION, async (_id) => {
-    throw new Error('Database not yet implemented (Epic 3)');
-  });
+  handleWithValidation<string, Conversation | null>(
+    IPC_CHANNELS.DB_GET_CONVERSATION,
+    async (id) => {
+      const database = getDatabase();
+      return database.getConversation(id);
+    }
+  );
 
-  handleWithValidation<void, unknown[]>(
+  handleWithValidation<void, Conversation[]>(
     IPC_CHANNELS.DB_LIST_CONVERSATIONS,
     async () => {
-      return [];
+      const database = getDatabase();
+      return database.listConversations();
     }
   );
 
   handleWithValidation<string, void>(
     IPC_CHANNELS.DB_DELETE_CONVERSATION,
-    async (_id) => {
-      throw new Error('Database not yet implemented (Epic 3)');
+    async (id) => {
+      const database = getDatabase();
+      database.deleteConversation(id);
     }
   );
 
   // ============================================================
   // Database - Messages (Epic 3)
   // ============================================================
-  handleWithValidation<unknown, unknown>(IPC_CHANNELS.DB_CREATE_MESSAGE, async (_message) => {
-    throw new Error('Database not yet implemented (Epic 3)');
-  });
+  handleWithValidation<Omit<Message, 'id' | 'createdAt'>, Message>(
+    IPC_CHANNELS.DB_CREATE_MESSAGE,
+    async (message) => {
+      const database = getDatabase();
+      return database.createMessage(message);
+    }
+  );
 
-  handleWithValidation<GetMessagesRequest, unknown>(
+  handleWithValidation<GetMessagesRequest, GetMessagesResponse>(
     IPC_CHANNELS.DB_GET_MESSAGES,
-    async (_request) => {
-      return { messages: [], total: 0 };
+    async (request) => {
+      const database = getDatabase();
+      const limit = request.limit ?? 100;
+      const offset = request.offset ?? 0;
+
+      const messages = database.listMessages(request.conversationId, limit, offset);
+
+      return { messages, total: messages.length };
     }
   );
 
@@ -261,4 +332,14 @@ export function unregisterIpcHandlers(): void {
   Object.values(IPC_CHANNELS).forEach(channel => {
     ipcMain.removeHandler(channel);
   });
+}
+
+/**
+ * Clean up resources (call on app quit)
+ */
+export function cleanupIpcResources(): void {
+  if (db) {
+    db.close();
+    db = null;
+  }
 }

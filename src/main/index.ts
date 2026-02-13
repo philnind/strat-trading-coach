@@ -5,7 +5,7 @@
 
 import { app, shell, BrowserWindow } from 'electron';
 import { createMainWindow } from './window';
-import { registerIpcHandlers } from './ipc';
+import { registerIpcHandlers, cleanupIpcResources } from './ipc';
 
 // Note: electron-squirrel-startup can be added later for Windows auto-update support
 // if (require('electron-squirrel-startup')) app.quit();
@@ -101,7 +101,8 @@ app.on('window-all-closed', () => {
 
 // Handle app termination
 app.on('before-quit', () => {
-  // Cleanup will be added in future epics (close DB connections, etc.)
+  // Close database connections and cleanup resources
+  cleanupIpcResources();
 });
 
 // Prevent multiple instances (optional - can be enabled later)

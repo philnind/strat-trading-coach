@@ -146,7 +146,7 @@ export async function createMainWindow(): Promise<BaseWindow> {
   if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
     // Development: load from Vite dev server
     const viteDevUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
-    console.log('[Window] Loading chat renderer from:', viteDevUrl);
+    console.warn('[Window] Loading chat renderer from:', viteDevUrl);
 
     // Capture renderer console output to terminal
     chatView.webContents.on('console-message', (_event, level, message, line, sourceId) => {
@@ -157,7 +157,7 @@ export async function createMainWindow(): Promise<BaseWindow> {
       } else if (level === 2) { // error
         console.error(`${prefix} ERROR ${location}:`, message);
       } else {
-        console.log(`${prefix} ${location}:`, message);
+        console.warn(`${prefix} ${location}:`, message);
       }
     });
 
@@ -168,7 +168,7 @@ export async function createMainWindow(): Promise<BaseWindow> {
 
     // Log when page finishes loading
     chatView.webContents.on('did-finish-load', () => {
-      console.log('[Window] Chat renderer loaded successfully');
+      console.warn('[Window] Chat renderer loaded successfully');
     });
 
     await chatView.webContents.loadURL(viteDevUrl);
