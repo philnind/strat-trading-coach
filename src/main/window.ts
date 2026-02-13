@@ -147,15 +147,34 @@ export async function createMainWindow(): Promise<BaseWindow> {
     // Development: load from Vite dev server
     const viteDevUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
     console.log('[Window] Loading chat renderer from:', viteDevUrl);
-    await chatView.webContents.loadURL(viteDevUrl);
 
-    // Open DevTools in development
-    chatView.webContents.openDevTools({ mode: 'detach' });
+    // Capture renderer console output to terminal
+    chatView.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+      const prefix = '[Renderer Console]';
+      const location = sourceId ? `${sourceId}:${line}` : '';
+      if (level === 1) { // warning
+        console.warn(`${prefix} WARN ${location}:`, message);
+      } else if (level === 2) { // error
+        console.error(`${prefix} ERROR ${location}:`, message);
+      } else {
+        console.log(`${prefix} ${location}:`, message);
+      }
+    });
 
     // Log any load failures
     chatView.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
       console.error('[Window] Chat renderer failed to load:', errorCode, errorDescription, validatedURL);
     });
+
+    // Log when page finishes loading
+    chatView.webContents.on('did-finish-load', () => {
+      console.log('[Window] Chat renderer loaded successfully');
+    });
+
+    await chatView.webContents.loadURL(viteDevUrl);
+
+    // Open DevTools in development
+    chatView.webContents.openDevTools({ mode: 'detach' });
   } else {
     // Production: load from built files
     await chatView.webContents.loadFile(
