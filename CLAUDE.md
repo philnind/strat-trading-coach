@@ -6,6 +6,25 @@
 
 ---
 
+## Testing Protocol (CRITICAL)
+
+**Before asking Phil to test anything:**
+
+1. ✅ **Test yourself first** - Run `npm run dev` with a timeout to capture output
+2. ✅ **Check for errors** - Look for build errors, runtime errors, console errors
+3. ✅ **Add console logging** - Pipe renderer console output to terminal:
+   ```typescript
+   webContents.on('console-message', (_event, level, message, line, sourceId) => {
+     console.log(`[Renderer Console] ${sourceId}:${line}:`, message);
+   });
+   ```
+4. ✅ **Debug and fix** - Resolve all errors before sending to Phil
+5. ✅ **Only then** - Ask Phil to verify the visual/UX aspects
+
+**Why:** Phil shouldn't be a debugger relay. Use terminal logging to see renderer errors yourself.
+
+---
+
 ## Project Identity
 
 - **Name:** strat-monitor
