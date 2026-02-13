@@ -16,15 +16,19 @@ export default defineConfig(({ command }) => {
   return {
     resolve: {
       alias: {
-        '@': path.join(__dirname, 'src/renderer/src')
+        '@': path.join(__dirname, 'src/renderer/src'),
+        '@main': path.join(__dirname, 'src/main'),
+        '@renderer': path.join(__dirname, 'src/renderer'),
+        '@shared': path.join(__dirname, 'src/shared'),
+        '@preload': path.join(__dirname, 'src/preload'),
       },
     },
     plugins: [
       react(),
       electron({
         main: {
-          // Shortcut of `build.lib.entry`
-          entry: 'electron/main/index.ts',
+          // Main process entry point
+          entry: 'src/main/index.ts',
           onstart(args) {
             if (process.env.VSCODE_DEBUG) {
               // eslint-disable-next-line no-console
@@ -42,12 +46,20 @@ export default defineConfig(({ command }) => {
                 external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
               },
             },
+            resolve: {
+              alias: {
+                '@main': path.join(__dirname, 'src/main'),
+                '@shared': path.join(__dirname, 'src/shared'),
+              },
+            },
           },
         },
         preload: {
-          // Shortcut of `build.rollupOptions.input`.
-          // Preload scripts may contain Web assets, so use the `build.rollupOptions.input` instead `build.lib.entry`.
-          input: 'electron/preload/index.ts',
+          // Two preload scripts: chat renderer and TradingView
+          input: {
+            index: 'src/preload/index.ts',
+            tradingview: 'src/preload/tradingview.ts',
+          },
           vite: {
             build: {
               sourcemap: sourcemap ? 'inline' : undefined, // #332
@@ -55,6 +67,12 @@ export default defineConfig(({ command }) => {
               outDir: 'dist-electron/preload',
               rollupOptions: {
                 external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
+              },
+            },
+            resolve: {
+              alias: {
+                '@shared': path.join(__dirname, 'src/shared'),
+                '@preload': path.join(__dirname, 'src/preload'),
               },
             },
           },
