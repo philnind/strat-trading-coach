@@ -67,6 +67,12 @@ export default defineConfig(({ command }) => {
               outDir: 'dist-electron/preload',
               rollupOptions: {
                 external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
+                output: {
+                  // Disable inlineDynamicImports for multiple inputs
+                  inlineDynamicImports: false,
+                  // Use entryFileNames to keep simple names
+                  entryFileNames: '[name].js',
+                },
               },
             },
             resolve: {
