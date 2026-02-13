@@ -54,3 +54,16 @@
 .cursor-blink {
   animation: blink 1s infinite;
 }
+
+/* Ensure SVG icons have no background and inherit color */
+svg {
+  background: none !important;
+  fill: none;
+  stroke: currentColor;
+}
+
+/* For icons that should be filled */
+svg[fill] {
+  fill: currentColor;
+  stroke: none;
+}

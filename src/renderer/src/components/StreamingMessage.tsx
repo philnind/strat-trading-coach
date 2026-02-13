@@ -30,12 +30,12 @@ export function StreamingMessage({ message }: StreamingMessageProps): React.Reac
         <div className="rounded-lg px-4 py-2 bg-zinc-800 text-zinc-100">
           <div className="prose prose-invert prose-sm max-w-none break-words">
             {message.content ? (
-              <div className="flex items-start">
+              <>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {message.content}
                 </ReactMarkdown>
                 <span className="ml-1 inline-block h-4 w-1.5 bg-blue-500 cursor-blink" />
-              </div>
+              </>
             ) : (
               <div className="flex items-center gap-2 text-sm text-zinc-400">
                 <span>Thinking</span>
