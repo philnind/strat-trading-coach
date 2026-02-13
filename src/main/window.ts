@@ -146,10 +146,16 @@ export async function createMainWindow(): Promise<BaseWindow> {
   if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
     // Development: load from Vite dev server
     const viteDevUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+    console.log('[Window] Loading chat renderer from:', viteDevUrl);
     await chatView.webContents.loadURL(viteDevUrl);
 
     // Open DevTools in development
     chatView.webContents.openDevTools({ mode: 'detach' });
+
+    // Log any load failures
+    chatView.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+      console.error('[Window] Chat renderer failed to load:', errorCode, errorDescription, validatedURL);
+    });
   } else {
     // Production: load from built files
     await chatView.webContents.loadFile(
