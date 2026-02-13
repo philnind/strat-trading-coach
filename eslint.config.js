@@ -15,6 +15,10 @@ export default [
       'out',
       '.vite',
       'coverage',
+      '.vscode/**/*',
+      'electron/**/*', // Template code - will be replaced in Epic 2
+      'src/renderer/src/components/update/**/*', // Template code
+      'src/renderer/src/demos/**/*', // Template code
     ],
   },
   js.configs.recommended,

@@ -27,6 +27,7 @@ export default defineConfig(({ command }) => {
           entry: 'electron/main/index.ts',
           onstart(args) {
             if (process.env.VSCODE_DEBUG) {
+              // eslint-disable-next-line no-console
               console.log(/* For `.vscode/.debug.script.mjs` */'[startup] Electron App')
             } else {
               args.startup()
