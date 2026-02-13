@@ -25,6 +25,71 @@
 
 ---
 
+## Ralph Loop (Automated Development)
+
+**What is Ralph?**
+
+`ralph.sh` is an automated development loop script that repeatedly calls Claude with a prompt until the task is complete. Named after Ralph Wiggum, it automates the "try → test → fix → repeat" cycle.
+
+**When to use Ralph:**
+
+- ✅ Iterative debugging tasks where multiple attempts may be needed
+- ✅ Test-driven development (loop until tests pass)
+- ✅ Automated code generation with verification
+- ✅ Tasks where you want Claude to keep trying until completion
+
+**How Ralph works:**
+
+```bash
+./ralph.sh "Complete Epic 4 Task 4.1 - Implement secure API key storage"
+```
+
+Ralph will:
+1. Call Claude with your prompt
+2. Check if the response contains `<promise>COMPLETE</promise>`
+3. Run `npm run test:unit` to verify tests pass
+4. If neither completion signal is found, wait 30 seconds and repeat
+5. Stop after 50 iterations (maximum) or when task completes
+
+**Completion signals:**
+
+```typescript
+// Signal completion in your response:
+<promise>COMPLETE</promise>
+
+// Or let the tests indicate completion:
+// (Ralph checks exit code of `npm run test:unit`)
+```
+
+**Usage pattern:**
+
+```bash
+# Start Ralph loop
+./ralph.sh "Fix failing database tests and ensure >80% coverage"
+
+# Ralph will:
+# - Iteration 1: Claude attempts fix → tests run → fail → continue
+# - Iteration 2: Claude adjusts approach → tests run → fail → continue
+# - Iteration N: Claude fixes last issue → tests pass → COMPLETE ✅
+```
+
+**Best practices:**
+
+- Provide clear, specific prompts (Ralph will use the same prompt each iteration)
+- Ensure your prompt includes success criteria
+- Use for tasks that can be verified automatically (tests, builds, linting)
+- Monitor the first few iterations to ensure Claude is making progress
+- Kill the loop (Ctrl+C) if Claude gets stuck in an unproductive pattern
+
+**When NOT to use Ralph:**
+
+- ❌ Tasks requiring human judgment or UX review
+- ❌ Tasks that need Phil's input or credentials
+- ❌ Exploratory work where the goal isn't clear
+- ❌ One-off commands or simple changes
+
+---
+
 ## Project Identity
 
 - **Name:** strat-monitor
@@ -44,8 +109,9 @@
 - `MONETIZATION-RESEARCH-REPORT.md` - Business model research
 - `CLAUDE.md` - This file
 - `HANDOFF.md` - Session continuity tracking (created during development)
+- `ralph.sh` - Automated development loop script
 
-**Rationale:** These are research artifacts that inform the entire project. They live at the repository root alongside the application code.
+**Rationale:** These are research artifacts and automation tools that inform the entire project. They live at the repository root alongside the application code.
 
 ## Project Structure Strategy
 
@@ -417,11 +483,23 @@ npx electron-rebuild -f -w better-sqlite3
 
 ## Current Session Tracking
 
-**Session 1 Goals:** Complete Epic 1 (Project Scaffolding) - Tasks 1-12
+**Current Session:** Session 4 - Epic 4 (Claude API Integration)
 
-**Expected Outcome:** `npm run dev` launches app with hot reload working
+**Previous Sessions Complete:**
+- ✅ Session 1: Epic 1 (Project Scaffolding) - Tasks 1.1-1.12
+- ✅ Session 2: Epic 2 (Core Architecture) - Tasks 2.1-2.8
+- ✅ Session 3: Epic 3 (Database Layer) - Tasks 3.1-3.7
 
-**Next Session:** Epic 2 (Core Architecture) - Tasks 13-20
+**Current Goals:** Complete Epic 4 (Claude API Integration) - Tasks 4.1-4.7
+
+**Expected Outcome:**
+- Streaming Claude responses arrive in renderer
+- Screenshot can be sent with message
+- API key stored/retrieved securely
+- Mock tests pass
+- Prompt caching verified
+
+**Next Session:** Epic 5 (Screenshot Capture) + Epic 6 Part 1 (Chat UI)
 
 ---
 

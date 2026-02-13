@@ -6,6 +6,9 @@
 import { ipcMain, WebContents, app } from 'electron';
 import type {
   ChatSendMessageRequest,
+  ChatMessageChunk,
+  ChatMessageComplete,
+  ChatMessageError,
   CreateTradeRequest,
   UpdateTradeRequest,
   ListTradesRequest,
@@ -18,12 +21,16 @@ import type {
   SetSplitRatioRequest,
 } from '@shared/ipc-types';
 import { IPC_CHANNELS } from '@shared/ipc-types';
-import { setSplitRatio, getSplitRatio, getMainWindow } from '../window';
+import { setSplitRatio, getSplitRatio, getMainWindow, getChatView } from '../window';
 import { DatabaseService } from '../services/database';
+import { ClaudeService } from '../services/claude';
+import { SecureStoreService } from '../services/secure-store';
 import type { Trade, Conversation, Message } from '@shared/models';
 
-// Singleton database instance
+// Singleton service instances
 let db: DatabaseService | null = null;
+let claude: ClaudeService | null = null;
+let secureStore: SecureStoreService | null = null;
 
 /**
  * Get or create the database service instance
@@ -33,6 +40,26 @@ function getDatabase(): DatabaseService {
     db = new DatabaseService();
   }
   return db;
+}
+
+/**
+ * Get or create the Claude service instance
+ */
+function getClaudeService(): ClaudeService {
+  if (!claude) {
+    claude = new ClaudeService();
+  }
+  return claude;
+}
+
+/**
+ * Get or create the secure store service instance
+ */
+function getSecureStore(): SecureStoreService {
+  if (!secureStore) {
+    secureStore = new SecureStoreService();
+  }
+  return secureStore;
 }
 
 /**
@@ -95,9 +122,125 @@ export function registerIpcHandlers(): void {
   // ============================================================
   handleWithValidation<ChatSendMessageRequest, void>(
     IPC_CHANNELS.CHAT_SEND_MESSAGE,
-    async (_request) => {
-      // TODO: Epic 4 - Implement Claude API integration
-      throw new Error('Chat API not yet implemented (Epic 4)');
+    async (request) => {
+      const database = getDatabase();
+      const claudeService = getClaudeService();
+      const secureStore = getSecureStore();
+      const chatView = getChatView();
+
+      if (!chatView) {
+        throw new Error('Chat view not available');
+      }
+
+      try {
+        // Get API key from secure storage
+        const apiKey = secureStore.getApiKey();
+        if (!apiKey) {
+          const error: ChatMessageError = {
+            conversationId: request.conversationId,
+            error: 'API key not set. Please configure your Anthropic API key in settings.',
+            code: 'NO_API_KEY',
+          };
+          chatView.webContents.send(IPC_CHANNELS.CHAT_MESSAGE_ERROR, error);
+          return;
+        }
+
+        // Initialize Claude service
+        if (!claudeService.isInitialized()) {
+          claudeService.initialize(apiKey);
+        }
+
+        // Get or create conversation
+        let conversationId = request.conversationId;
+        if (!conversationId) {
+          const newConversation = database.createConversation({
+            title: request.message.substring(0, 50) + '...',
+            tradeId: undefined,
+          });
+          conversationId = newConversation.id;
+        }
+
+        // Save user message to database
+        const userMessage = database.createMessage({
+          conversationId,
+          role: 'user',
+          content: request.message,
+          screenshotPath: request.screenshotPath,
+          tokens: undefined,
+          cached: false,
+        });
+
+        // Load conversation history (last 10 messages for context)
+        const history = database.listMessages(conversationId, 10, 0);
+        const conversationHistory = history
+          .filter((msg) => msg.id !== userMessage.id) // Exclude the message we just added
+          .map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          }));
+
+        // Send streaming message to Claude
+        let assistantMessageId: string | undefined;
+        let fullContent = '';
+
+        await claudeService.sendMessage({
+          message: request.message,
+          conversationHistory,
+          screenshotPath: request.screenshotPath,
+          onChunk: (chunk, index) => {
+            // Send chunk to renderer
+            const chunkData: ChatMessageChunk = {
+              conversationId,
+              messageId: assistantMessageId || 'pending',
+              chunk,
+              index,
+            };
+            chatView.webContents.send(IPC_CHANNELS.CHAT_MESSAGE_CHUNK, chunkData);
+          },
+          onComplete: (content, usage) => {
+            fullContent = content;
+
+            // Save assistant message to database
+            const assistantMessage = database.createMessage({
+              conversationId,
+              role: 'assistant',
+              content: fullContent,
+              screenshotPath: undefined,
+              tokens: usage.input_tokens + usage.output_tokens,
+              cached: (usage.cache_read_input_tokens ?? 0) > 0,
+            });
+
+            assistantMessageId = assistantMessage.id;
+
+            // Send completion event
+            const completeData: ChatMessageComplete = {
+              conversationId,
+              messageId: assistantMessage.id,
+              fullContent,
+              tokens: usage.input_tokens + usage.output_tokens,
+              cached: (usage.cache_read_input_tokens ?? 0) > 0,
+            };
+            chatView.webContents.send(IPC_CHANNELS.CHAT_MESSAGE_COMPLETE, completeData);
+          },
+          onError: (error) => {
+            // Send error to renderer
+            const errorData: ChatMessageError = {
+              conversationId,
+              error: error.message,
+              code: 'API_ERROR',
+            };
+            chatView.webContents.send(IPC_CHANNELS.CHAT_MESSAGE_ERROR, errorData);
+          },
+        });
+      } catch (error) {
+        console.error('[IPC] Chat send message error:', error);
+        const errorData: ChatMessageError = {
+          conversationId: request.conversationId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          code: 'HANDLER_ERROR',
+        };
+        chatView.webContents.send(IPC_CHANNELS.CHAT_MESSAGE_ERROR, errorData);
+      }
     }
   );
 
@@ -275,16 +418,29 @@ export function registerIpcHandlers(): void {
     }
   );
 
-  handleWithValidation<string, void>(IPC_CHANNELS.SETTINGS_SET_API_KEY, async (_apiKey) => {
-    // TODO: Epic 4 - Implement secure storage with safeStorage
-    throw new Error('Secure storage not yet implemented (Epic 4)');
+  handleWithValidation<string, void>(IPC_CHANNELS.SETTINGS_SET_API_KEY, async (apiKey) => {
+    const secureStore = getSecureStore();
+    const claudeService = getClaudeService();
+
+    // Validate API key format
+    if (!ClaudeService.validateApiKey(apiKey)) {
+      throw new Error('Invalid API key format. Must start with sk-ant- and be at least 30 characters.');
+    }
+
+    // Store encrypted API key
+    secureStore.setApiKey(apiKey);
+
+    // Initialize Claude service with new key
+    claudeService.initialize(apiKey);
+
+    console.warn('[IPC] API key set successfully');
   });
 
   handleWithValidation<void, unknown>(
     IPC_CHANNELS.SETTINGS_GET_API_KEY_STATUS,
     async () => {
-      // TODO: Epic 4 - Check if API key exists and is valid
-      return { hasKey: false };
+      const secureStore = getSecureStore();
+      return secureStore.getApiKeyStatus();
     }
   );
 
