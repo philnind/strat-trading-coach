@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type React from 'react'
-import UpdateElectron from '@/components/update'
+// UpdateElectron component removed - will be implemented in Epic 7
 import logoVite from './assets/logo-vite.svg'
 import logoElectron from './assets/logo-electron.svg'
 import './App.css'
@@ -30,8 +30,6 @@ function App(): React.ReactElement {
       <div className='flex-center'>
         Place static files into the<code>/public</code> folder <img style={{ width: '5em' }} src='./node.svg' alt='Node logo' />
       </div>
-
-      <UpdateElectron />
     </div>
   )
 }
