@@ -22,7 +22,7 @@ vi.mock('electron', () => ({
   app: {
     getPath: vi.fn((name: string) => {
       if (name === 'userData') {
-        return '/tmp/strat-monitor-test';
+        return '/tmp/the-strat-coach-test';
       }
       return '/tmp';
     }),

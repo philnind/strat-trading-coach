@@ -1,5 +1,5 @@
 /**
- * Database service for STRAT Monitor
+ * Database service for The Strat Coach
  * Handles better-sqlite3 initialization, migrations, and CRUD operations
  */
 
@@ -60,7 +60,7 @@ export class DatabaseService {
 
   constructor(dbPath?: string) {
     // Use provided path or default to userData
-    this.dbPath = dbPath || path.join(app.getPath('userData'), 'strat-monitor.db');
+    this.dbPath = dbPath || path.join(app.getPath('userData'), 'the-strat-coach.db');
 
     // Ensure directory exists
     const dir = path.dirname(this.dbPath);

@@ -1,8 +1,8 @@
-# CLAUDE.md - STRAT Trading Coach Electron App
+# CLAUDE.md - The Strat Coach Electron App
 
 > **Project-specific instructions for Claude Code development sessions**
 >
-> **Created:** 2026-02-13 | **Project:** strat-monitor
+> **Created:** 2026-02-13 | **Project:** the-strat-coach
 
 ---
 
@@ -92,7 +92,8 @@ Ralph will:
 
 ## Project Identity
 
-- **Name:** strat-monitor
+- **Name:** The Strat Coach
+- **Package name:** the-strat-coach
 - **Type:** Electron desktop application
 - **Purpose:** AI-powered trading coach for The Strat methodology with embedded TradingView charts
 - **Tech Stack:** electron-vite, React 19, TypeScript 5.x, Tailwind CSS v4, better-sqlite3, @anthropic-ai/sdk
@@ -121,15 +122,15 @@ When scaffolding the electron-vite project:
 
 1. **Scaffold to temporary subdirectory:**
    ```bash
-   npm create @quick-start/electron@latest strat-monitor-temp -- --template=react-ts
+   npm create @quick-start/electron@latest the-strat-coach-temp -- --template=react-ts
    ```
 
 2. **Move application files to root:**
    ```bash
    # Move app structure to root
-   mv strat-monitor-temp/* .
-   mv strat-monitor-temp/.* . 2>/dev/null || true
-   rm -rf strat-monitor-temp
+   mv the-strat-coach-temp/* .
+   mv the-strat-coach-temp/.* . 2>/dev/null || true
+   rm -rf the-strat-coach-temp
    ```
 
 3. **Result:** Clean root with both research docs and app structure coexisting
@@ -367,6 +368,63 @@ Before handoff, verify:
 - ✅ Tests run in CI
 - ✅ <2 min total E2E runtime
 
+## Trading Coach Methodology Distribution
+
+### Architecture Decision: Embed + Auto-Update
+
+**Goal:** Ensure all users get the same trading coach experience as Phil's `/Users/phil/Trading` CLI workspace.
+
+**Approach:**
+1. **Bundle coaching prompts in app:** `src/shared/coaching/`
+   - `THE-STRAT-GUARDRAILS.md` - Canonical Strat rules (965 lines)
+   - `TRADING-COACH-SYSTEM-PROMPT.md` - Personality, teaching method
+   - `version.json` - Methodology version tracking
+
+2. **Load as Claude API system prompt:**
+   ```typescript
+   const systemPrompt = buildSystemPrompt(); // Loads coaching files
+   anthropic.messages.create({
+     system: [
+       {
+         type: "text",
+         text: systemPrompt,
+         cache_control: { type: "ephemeral" }  // 90% cost savings!
+       }
+     ],
+     // ... rest of request
+   });
+   ```
+
+3. **Update distribution:**
+   - Methodology bundled with app version
+   - Updates via Electron auto-updater
+   - All users on v1.0.0 have identical coaching behavior
+   - No backend infrastructure required
+
+**Why this works:**
+- ✅ **Consistency:** Everyone on same version has identical experience
+- ✅ **Versioning:** Track which ruleset a user has
+- ✅ **Offline:** Works without internet (after initial setup)
+- ✅ **Cost optimization:** Prompt caching saves 90% on system prompt tokens
+- ✅ **Simple:** No backend server needed
+- ✅ **Control:** You decide when users get updates (via auto-update)
+
+**Update workflow:**
+1. Edit coaching files in `src/shared/coaching/`
+2. Bump `methodology_version` in `version.json`
+3. Test thoroughly
+4. Commit + tag release (e.g., v1.1.0)
+5. CI builds new app
+6. Auto-updater pushes to all users
+
+**Display in app:**
+- Settings: "Trading Methodology: v1.0.0"
+- Help menu: "What's new in coaching v1.1.0?"
+
+See: `src/shared/coaching/README.md` for full documentation.
+
+---
+
 ## Dependencies Management
 
 ### Production Dependencies
@@ -375,11 +433,18 @@ Approved for installation (from PRD):
 - `@anthropic-ai/sdk` — Claude API client
 - `better-sqlite3` — SQLite database
 - `electron-updater` — Auto-update system
-- `zustand` — State management
+- `zustand` — State management (will be replaced by assistant-ui state)
 - `lucide-react` — Icons
 - `react-markdown` — Markdown rendering
 - `tailwind-merge`, `clsx` — Tailwind utilities
 - `@radix-ui/*` — shadcn/ui dependencies
+
+**NEW - Approved by Phil 2026-02-14:**
+- `@assistant-ui/react` — Purpose-built AI chat UI primitives
+  - Replaces custom chat components
+  - Built on Radix UI (same as shadcn/ui)
+  - Target design: Grok clone
+  - See: `ASSISTANT-UI-MIGRATION-PLAN.md`
 
 ### Dev Dependencies
 

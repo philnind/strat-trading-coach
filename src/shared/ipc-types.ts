@@ -1,5 +1,5 @@
 /**
- * Type-safe IPC channel definitions for STRAT Monitor
+ * Type-safe IPC channel definitions for The Strat Coach
  * Ensures compile-time safety for main <-> renderer communication
  */
 
@@ -49,6 +49,16 @@ export const IPC_CHANNELS = {
   // System
   APP_GET_VERSION: 'app:get-version',
   APP_QUIT: 'app:quit',
+
+  // Multi-Timeframe Prototype (Phase 1: Cookie Auth Test)
+  PROTOTYPE_TEST_COOKIE_AUTH: 'prototype:test-cookie-auth',
+
+  // Multi-Timeframe (Production)
+  MULTI_TIMEFRAME_ANALYZE: 'multi-timeframe:analyze',
+
+  // TradingView OAuth
+  TRADINGVIEW_OPEN_LOGIN: 'tradingview:open-login',
+  TRADINGVIEW_CHECK_LOGIN: 'tradingview:check-login',
 } as const;
 
 /**
@@ -60,7 +70,8 @@ export interface ChatSendMessageRequest {
   message: string;
   conversationId?: string;
   includeScreenshot?: boolean;
-  screenshotPath?: string;
+  screenshotPath?: string; // Deprecated - use screenshotPaths instead
+  screenshotPaths?: string[]; // Support multiple screenshots
 }
 
 export interface ChatMessageChunk {
@@ -173,6 +184,45 @@ export interface WindowBounds {
   height: number;
 }
 
+// Multi-Timeframe Prototype
+export interface PrototypeCookieAuthResponse {
+  success: boolean;
+  screenshotPath: string;
+  message: string;
+}
+
+// Multi-Timeframe (Production)
+export interface MultiTimeframeAnalyzeRequest {
+  timeframes?: string[]; // Default: ['1D', '1W', '1H']
+  userMessage?: string; // Optional custom message
+}
+
+export interface TimeframeScreenshotResult {
+  timeframe: string;
+  filePath: string;
+  width: number;
+  height: number;
+  fileSize: number;
+  success: boolean;
+  error?: string;
+}
+
+export interface MultiTimeframeAnalyzeResponse {
+  success: boolean;
+  analysis?: string;
+  screenshots: TimeframeScreenshotResult[];
+  totalTime: number; // milliseconds
+  successCount: number;
+  failureCount: number;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens?: number;
+    cacheCreationTokens?: number;
+  };
+  error?: string;
+}
+
 /**
  * Type-safe IPC API
  * This is what gets exposed via contextBridge in the preload script
@@ -220,6 +270,18 @@ export interface ElectronAPI {
   // System
   getAppVersion: () => Promise<string>;
   quit: () => void;
+
+  // Multi-Timeframe Prototype
+  testCookieAuth: () => Promise<PrototypeCookieAuthResponse>;
+
+  // Multi-Timeframe (Production)
+  analyzeMultiTimeframe: (
+    request?: MultiTimeframeAnalyzeRequest
+  ) => Promise<MultiTimeframeAnalyzeResponse>;
+
+  // TradingView OAuth
+  openTradingViewLogin: () => Promise<void>;
+  checkTradingViewLogin: () => Promise<boolean>;
 }
 
 /**

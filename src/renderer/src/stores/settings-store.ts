@@ -141,7 +141,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
     }),
     {
-      name: 'strat-monitor-settings', // localStorage key
+      name: 'the-strat-coach-settings', // localStorage key
       partialize: (state) => ({
         // Only persist these fields
         splitRatio: state.splitRatio,

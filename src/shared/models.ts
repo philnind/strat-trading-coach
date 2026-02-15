@@ -1,5 +1,5 @@
 /**
- * Shared data models for STRAT Monitor
+ * Shared data models for The Strat Coach
  * Used across main, renderer, and preload processes
  */
 

@@ -1,33 +1,34 @@
 /**
  * Main Application Component
- * STRAT Monitor - AI Trading Coach
+ * The Strat Coach - AI Trading Coach
+ *
+ * Now using assistant-ui for chat interface
  */
 
-import { useState } from 'react'
-import type React from 'react'
-import { TitleBar } from './components/TitleBar'
-import { ChatPanel } from './components/ChatPanel'
-import { SettingsModal } from './components/SettingsModal'
-import './App.css'
+import type React from 'react';
+import { TitleBar } from './components/TitleBar';
+import { StratRuntimeProvider } from './components/StratRuntimeProvider';
+import { GrokThread } from './components/GrokThread';
+import { useTheme } from './hooks/use-theme';
+import './App.css';
 
 function App(): React.ReactElement {
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  // Initialize theme detection
+  useTheme();
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-950 text-zinc-100">
+    <div className="flex h-screen flex-col bg-white dark:bg-[#141414] font-display">
       {/* Title Bar */}
-      <TitleBar onSettingsClick={() => setSettingsOpen(true)} />
+      <TitleBar />
 
-      {/* Main Content - Chat Panel */}
-      <ChatPanel />
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+      {/* Main Content - Chat with assistant-ui */}
+      <div className="flex flex-1 overflow-hidden">
+        <StratRuntimeProvider>
+          <GrokThread />
+        </StratRuntimeProvider>
+      </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.stratmonitor.app",
-  "productName": "STRAT Monitor",
+  "appId": "com.stratcoach.app",
+  "productName": "The Strat Coach",
   "asar": true,
   "directories": {
     "output": "release/${version}",

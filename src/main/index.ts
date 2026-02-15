@@ -1,5 +1,5 @@
 /**
- * Main process entry point for STRAT Monitor
+ * Main process entry point for The Strat Coach
  * Handles app lifecycle, security, and window initialization
  */
 
@@ -11,10 +11,54 @@ import { registerIpcHandlers, cleanupIpcResources } from './ipc';
 // if (require('electron-squirrel-startup')) app.quit();
 
 // Set app name for userData path
-app.setName('STRAT Monitor');
+app.setName('The Strat Coach');
+
+// Log userData path to verify persistence location
+console.log('[Main] userData path:', app.getPath('userData'));
+console.log('[Main] App version:', app.getVersion());
+console.log('[Main] App name:', app.getName());
 
 /**
- * Security: Prevent navigation to untrusted URLs
+ * Hosts allowed for navigation across the app.
+ * OAuth providers must be listed here so popup windows can complete login flows.
+ */
+const ALLOWED_NAVIGATION_HOSTS = [
+  'localhost',
+  '127.0.0.1',
+  // TradingView
+  'www.tradingview.com',
+  'tradingview.com',
+  // Google OAuth (accounts.google.com redirects through several subdomains)
+  'accounts.google.com',
+  'accounts.youtube.com',
+  'myaccount.google.com',
+  'www.google.com',
+  'oauth-redirect.googleusercontent.com',
+  'content.googleapis.com',
+  'www.googleapis.com',
+  'ssl.gstatic.com',
+  // Apple OAuth
+  'appleid.apple.com',
+  // Facebook OAuth
+  'www.facebook.com',
+  'facebook.com',
+  'm.facebook.com',
+  // Yahoo OAuth (TradingView supports Yahoo sign-in)
+  'login.yahoo.com',
+  'api.login.yahoo.com',
+];
+
+/**
+ * Security: Prevent navigation to untrusted URLs and control window creation.
+ *
+ * IMPORTANT: The `will-navigate` handler fires for ALL webContents in the app,
+ * including child/popup BrowserWindows created via setWindowOpenHandler.
+ * OAuth provider hosts MUST be in ALLOWED_NAVIGATION_HOSTS or their redirects
+ * will be blocked.
+ *
+ * NOTE on setWindowOpenHandler: The global handler set here acts as a default.
+ * Individual webContents (e.g. the TradingView view in window.ts) can overwrite
+ * it by calling setWindowOpenHandler() again after construction. The last call wins.
  */
 function setupNavigationGuards(): void {
   app.on('web-contents-created', (_event, contents) => {
@@ -22,22 +66,15 @@ function setupNavigationGuards(): void {
     contents.on('will-navigate', (event, navigationUrl) => {
       const parsedUrl = new URL(navigationUrl);
 
-      // Allowed hosts for navigation
-      const allowedHosts = [
-        'localhost',
-        '127.0.0.1',
-        'www.tradingview.com',
-        'tradingview.com',
-      ];
-
       // Allow navigation if host is in allowlist
-      if (!allowedHosts.includes(parsedUrl.hostname)) {
+      if (!ALLOWED_NAVIGATION_HOSTS.includes(parsedUrl.hostname)) {
         console.warn(`[Security] Blocked navigation to: ${navigationUrl}`);
         event.preventDefault();
       }
     });
 
-    // Prevent opening new windows (open external links in default browser)
+    // Default: deny new windows and open external links in system browser.
+    // The TradingView view overwrites this in window.ts to allow OAuth popups.
     contents.setWindowOpenHandler(({ url }) => {
       // Open https links in external browser
       if (url.startsWith('https://') || url.startsWith('http://')) {
