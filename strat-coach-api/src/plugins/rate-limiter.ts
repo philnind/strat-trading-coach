@@ -89,7 +89,7 @@ const rateLimiterPlugin: FastifyPluginAsync = async (server: FastifyInstance) =>
         remaining,
       };
     } catch (error) {
-      server.log.error('Rate limit check failed:', error);
+      server.log.error({ err: error }, 'Rate limit check failed');
       // On error, allow request (fail open)
       return {
         allowed: true,
@@ -107,14 +107,14 @@ const rateLimiterPlugin: FastifyPluginAsync = async (server: FastifyInstance) =>
     ipAddress?: string
   ): Promise<void> {
     try {
-      await server.db.query(
+      await server.db.pool.query(
         `INSERT INTO rate_limit_events (user_id, event_type, ip_address)
          VALUES ($1, $2, $3)`,
         [userId, eventType, ipAddress]
       );
     } catch (error) {
       // Non-critical - log but don't fail request
-      server.log.error('Failed to record rate limit event:', error);
+      server.log.error({ err: error }, 'Failed to record rate limit event');
     }
   }
 

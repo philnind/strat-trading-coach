@@ -133,11 +133,11 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
 
       // Update last active timestamp
       // (Non-blocking - fire and forget)
-      server.db.query(
+      server.db.pool.query(
         'UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1',
         [user.id]
-      ).catch((err) => {
-        server.log.error('Failed to update last_active_at:', err);
+      ).catch((err: Error) => {
+        server.log.error({ err }, 'Failed to update last_active_at');
       });
     } catch (error) {
       return reply.code(401).send({
@@ -155,7 +155,7 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
    */
   server.decorate('optionalAuth', async function (
     request: FastifyRequest,
-    reply: FastifyReply
+    _reply: FastifyReply
   ) {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -180,7 +180,7 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
       }
     } catch (error) {
       // Invalid token - log but don't fail request
-      server.log.warn('Optional auth failed:', error);
+      server.log.warn({ err: error }, 'Optional auth failed');
     }
   });
 };

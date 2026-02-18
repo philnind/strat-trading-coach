@@ -34,7 +34,7 @@ const databasePlugin: FastifyPluginAsync = async (server: FastifyInstance) => {
       throw new Error(health.error || 'Database connection failed');
     }
   } catch (error) {
-    server.log.error('❌ Database connection failed:', error);
+    server.log.error({ err: error }, '❌ Database connection failed');
     throw error;
   }
 

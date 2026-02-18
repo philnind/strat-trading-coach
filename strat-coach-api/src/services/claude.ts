@@ -110,9 +110,23 @@ export class ClaudeService {
     // Add conversation history
     if (conversationHistory) {
       for (const msg of conversationHistory) {
+        const content: string | Anthropic.ContentBlockParam[] =
+          typeof msg.content === 'string'
+            ? msg.content
+            : msg.content.map(c => {
+                if (c.type === 'text') {
+                  return { type: 'text' as const, text: c.text || '' };
+                } else {
+                  return {
+                    type: 'image' as const,
+                    source: c.source!,
+                  };
+                }
+              });
+
         messages.push({
           role: msg.role,
-          content: typeof msg.content === 'string' ? msg.content : msg.content,
+          content,
         });
       }
     }
@@ -124,7 +138,7 @@ export class ClaudeService {
     });
 
     // Build system prompt (with caching)
-    const systemBlocks: Anthropic.Messages.TextBlock[] = [];
+    const systemBlocks: Array<Anthropic.Messages.TextBlockParam & { cache_control?: { type: 'ephemeral' } }> = [];
 
     if (systemPrompt) {
       systemBlocks.push({
@@ -186,9 +200,6 @@ export class ClaudeService {
               cacheCreationTokens,
             });
             break;
-
-          case 'error':
-            throw new Error(event.error.message || 'Unknown Claude API error');
         }
       }
     } catch (error) {

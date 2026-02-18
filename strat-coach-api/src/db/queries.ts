@@ -82,6 +82,9 @@ export async function createUser(params: CreateUserParams): Promise<User> {
     [params.clerk_user_id, params.email, params.display_name]
   );
 
+  if (!result.rows[0]) {
+    throw new Error('Failed to create user');
+  }
   return result.rows[0];
 }
 
@@ -133,6 +136,9 @@ export async function updateUserSubscription(params: {
     ]
   );
 
+  if (!result.rows[0]) {
+    throw new Error(`User not found: ${params.userId}`);
+  }
   return result.rows[0];
 }
 
@@ -184,6 +190,9 @@ export async function recordUsage(params: RecordUsageParams): Promise<TokenUsage
       [totalTokens, params.userId]
     );
 
+    if (!usageResult.rows[0]) {
+      throw new Error('Failed to record usage');
+    }
     return usageResult.rows[0];
   });
 }
@@ -254,6 +263,9 @@ export async function createConversation(params: {
     [params.userId, params.title, params.tradeId]
   );
 
+  if (!result.rows[0]) {
+    throw new Error('Failed to create conversation');
+  }
   return result.rows[0];
 }
 
@@ -316,6 +328,9 @@ export async function createMessage(params: {
       [params.conversationId]
     );
 
+    if (!messageResult.rows[0]) {
+      throw new Error('Failed to create message');
+    }
     return messageResult.rows[0];
   });
 }

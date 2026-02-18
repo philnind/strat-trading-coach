@@ -4,9 +4,8 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
-import { ClaudeService, StreamChatRequest } from '../services/claude.js';
+import { ClaudeService } from '../services/claude.js';
 import { REQUEST_CONSTRAINTS, IMAGE_CONSTRAINTS } from '../config/constants.js';
-import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -42,11 +41,9 @@ async function loadSystemPrompt(): Promise<string> {
   }
 
   try {
-    // Load coaching files from the coaching directory
-    const coachingDir = path.join(__dirname, '../../coaching');
-
-    // For now, just return a placeholder
     // TODO: Load actual coaching methodology from files when Phil provides them
+    // const coachingDir = path.join(__dirname, '../../coaching');
+
     systemPrompt = `You are The Strat Coach, an AI trading assistant specialized in The Strat methodology.
 
 Your role is to:
@@ -259,7 +256,7 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
                 })}\n\n`
               );
             } catch (error) {
-              server.log.error('Failed to record usage:', error);
+              server.log.error({ err: error }, 'Failed to record usage');
               // Send completion even if usage recording failed
               reply.raw.write(
                 `data: ${JSON.stringify({
@@ -274,7 +271,7 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
             reply.raw.end();
           },
           onError: (error) => {
-            server.log.error('Claude stream error:', error);
+            server.log.error({ err: error }, 'Claude stream error');
 
             // Determine error code
             let errorCode = 'CLAUDE_API_ERROR';

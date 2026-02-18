@@ -5,7 +5,7 @@
 
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 /**
  * Redis plugin
@@ -37,8 +37,8 @@ const redisPlugin: FastifyPluginAsync = async (server: FastifyInstance) => {
   });
 
   // Handle connection errors
-  redis.on('error', (err) => {
-    server.log.error('Redis connection error:', err);
+  redis.on('error', (err: Error) => {
+    server.log.error({ err }, 'Redis connection error');
   });
 
   redis.on('connect', () => {
@@ -55,7 +55,7 @@ const redisPlugin: FastifyPluginAsync = async (server: FastifyInstance) => {
     const latency = await redis.ping('LATENCY');
     server.log.info(`📡 Redis ping successful (latency: ${latency})`);
   } catch (error) {
-    server.log.error('❌ Redis ping failed:', error);
+    server.log.error({ err: error }, '❌ Redis ping failed');
     throw error;
   }
 
