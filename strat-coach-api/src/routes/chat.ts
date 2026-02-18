@@ -6,11 +6,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
 import { ClaudeService } from '../services/claude.js';
 import { REQUEST_CONSTRAINTS, IMAGE_CONSTRAINTS } from '../config/constants.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Chat stream request body
