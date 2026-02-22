@@ -3,9 +3,28 @@
  * Handles app lifecycle, security, and window initialization
  */
 
-import { app, shell, BrowserWindow } from 'electron';
+import { app, shell, BrowserWindow, protocol, net } from 'electron';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createMainWindow } from './window';
 import { registerIpcHandlers, cleanupIpcResources } from './ipc';
+
+const __dirname = join(fileURLToPath(import.meta.url), '..');
+
+// Register app:// as a privileged scheme BEFORE app.whenReady()
+// This allows the renderer to load via app://localhost in production,
+// giving Clerk a valid HTTPS-like origin instead of file://
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+]);
 
 // Note: electron-squirrel-startup can be added later for Windows auto-update support
 // if (require('electron-squirrel-startup')) app.quit();
@@ -25,6 +44,10 @@ console.log('[Main] App name:', app.getName());
 const ALLOWED_NAVIGATION_HOSTS = [
   'localhost',
   '127.0.0.1',
+  // Clerk auth domain
+  'clerk.com',
+  'accounts.clerk.com',
+  'clerk.accounts.dev',
   // TradingView
   'www.tradingview.com',
   'tradingview.com',
@@ -66,8 +89,14 @@ function setupNavigationGuards(): void {
     contents.on('will-navigate', (event, navigationUrl) => {
       const parsedUrl = new URL(navigationUrl);
 
-      // Allow navigation if host is in allowlist
-      if (!ALLOWED_NAVIGATION_HOSTS.includes(parsedUrl.hostname)) {
+        // Allow navigation if host is in allowlist or is a Clerk subdomain
+      const isAllowed =
+        ALLOWED_NAVIGATION_HOSTS.includes(parsedUrl.hostname) ||
+        parsedUrl.hostname.endsWith('.clerk.accounts.dev') ||
+        parsedUrl.hostname.endsWith('.clerk.com') ||
+        parsedUrl.hostname.endsWith('.accounts.dev');
+
+      if (!isAllowed) {
         console.warn(`[Security] Blocked navigation to: ${navigationUrl}`);
         event.preventDefault();
       }
@@ -95,6 +124,20 @@ function setupNavigationGuards(): void {
 async function initialize(): Promise<void> {
   // Set up security handlers before any windows are created
   setupNavigationGuards();
+
+  // In production, serve renderer files via app:// so Clerk sees a valid origin
+  if (process.env.NODE_ENV !== 'development' && !process.env.VITE_DEV_SERVER_URL) {
+    protocol.handle('app', (request) => {
+      const url = new URL(request.url);
+      let filePath = url.pathname;
+      // Default to index.html for SPA routes
+      if (filePath === '/' || filePath === '') {
+        filePath = '/index.html';
+      }
+      const fullPath = join(__dirname, '../renderer' + filePath);
+      return net.fetch('file://' + fullPath);
+    });
+  }
 
   // Register all IPC handlers
   registerIpcHandlers();

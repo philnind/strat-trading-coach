@@ -59,6 +59,17 @@ export const IPC_CHANNELS = {
   // TradingView OAuth
   TRADINGVIEW_OPEN_LOGIN: 'tradingview:open-login',
   TRADINGVIEW_CHECK_LOGIN: 'tradingview:check-login',
+
+  // Auth
+  AUTH_SIGN_OUT: 'auth:sign-out',
+
+  // Screener
+  SCREENER_SCAN: 'screener:scan',
+
+  // Watchlist
+  WATCHLIST_GET: 'watchlist:get',
+  WATCHLIST_ADD: 'watchlist:add',
+  WATCHLIST_REMOVE: 'watchlist:remove',
 } as const;
 
 /**
@@ -68,10 +79,12 @@ export const IPC_CHANNELS = {
 // Chat Messages
 export interface ChatSendMessageRequest {
   message: string;
+  authToken: string; // Clerk JWT — required for backend auth
   conversationId?: string;
   includeScreenshot?: boolean;
   screenshotPath?: string; // Deprecated - use screenshotPaths instead
   screenshotPaths?: string[]; // Support multiple screenshots
+  tradingStyle?: string; // 'day-trade' | 'swing-trade' | 'position-trade'
 }
 
 export interface ChatMessageChunk {
@@ -170,6 +183,7 @@ export interface UpdateSettingsRequest {
 export interface ApiKeyStatusResponse {
   hasKey: boolean;
   isValid?: boolean;
+  source?: 'environment' | 'stored';
 }
 
 // Window
@@ -221,6 +235,44 @@ export interface MultiTimeframeAnalyzeResponse {
     cacheCreationTokens?: number;
   };
   error?: string;
+}
+
+// Screener
+export type StratCandleType = '2-up' | '2-down' | '1' | '3';
+export type StratDirection = 'bullish' | 'bearish' | null;
+export type StratAlignment = 'full-ftfc' | 'partial' | 'none';
+export type ScreenerTradingStyle = 'day-trade' | 'swing-trade' | 'position-trade';
+
+export interface TimeframeCheck {
+  candle1: StratCandleType | null;
+  candle2: StratCandleType | null;
+  direction: StratDirection;
+}
+
+export interface ScreenerTimeframeResult {
+  label: string;
+  check: TimeframeCheck;
+}
+
+export interface ScreenerSymbolResult {
+  symbol: string;
+  direction: StratDirection;
+  timeframes: ScreenerTimeframeResult[]; // always 3 entries
+  alignment: StratAlignment;
+  error?: string;
+}
+
+export interface ScreenerScanRequest {
+  symbols?: string[];
+  tradingStyle?: ScreenerTradingStyle;
+}
+
+export interface ScreenerScanResponse {
+  results: ScreenerSymbolResult[];
+  scannedAt: string;
+  duration: number;
+  tradingStyle: ScreenerTradingStyle;
+  timeframeLabels: string[]; // e.g. ['1H', '4H', '1D']
 }
 
 /**
@@ -282,6 +334,17 @@ export interface ElectronAPI {
   // TradingView OAuth
   openTradingViewLogin: () => Promise<void>;
   checkTradingViewLogin: () => Promise<boolean>;
+
+  // Auth
+  signOut: () => Promise<void>;
+
+  // Screener
+  screenerScan: (request?: ScreenerScanRequest) => Promise<ScreenerScanResponse>;
+
+  // Watchlist
+  getWatchlist: () => Promise<string[]>;
+  addToWatchlist: (symbol: string) => Promise<string[]>;
+  removeFromWatchlist: (symbol: string) => Promise<string[]>;
 }
 
 /**
@@ -290,5 +353,9 @@ export interface ElectronAPI {
 declare global {
   interface Window {
     electronAPI: ElectronAPI;
+    // Clerk instance — set by use-auth.ts after Clerk loads
+    // Typed as unknown to avoid importing @clerk/clerk-js into the shared module
+    // (which compiles for both main and renderer). Cast in renderer code.
+    __clerk: unknown;
   }
 }

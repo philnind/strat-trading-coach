@@ -18,6 +18,8 @@ import type {
   CaptureScreenshotRequest,
   UpdateSettingsRequest,
   SetSplitRatioRequest,
+  MultiTimeframeAnalyzeRequest,
+  ScreenerScanRequest,
 } from '@shared/ipc-types';
 import { IPC_CHANNELS } from '@shared/ipc-types';
 
@@ -169,6 +171,60 @@ const electronAPI: ElectronAPI = {
 
   quit: () => {
     ipcRenderer.send(IPC_CHANNELS.APP_QUIT);
+  },
+
+  // ============================================================
+  // Multi-Timeframe Prototype API
+  // ============================================================
+  testCookieAuth: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.PROTOTYPE_TEST_COOKIE_AUTH);
+  },
+
+  // ============================================================
+  // Multi-Timeframe (Production) API
+  // ============================================================
+  analyzeMultiTimeframe: (request?: MultiTimeframeAnalyzeRequest) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.MULTI_TIMEFRAME_ANALYZE, request);
+  },
+
+  // ============================================================
+  // TradingView OAuth API
+  // ============================================================
+  openTradingViewLogin: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.TRADINGVIEW_OPEN_LOGIN);
+  },
+
+  checkTradingViewLogin: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.TRADINGVIEW_CHECK_LOGIN);
+  },
+
+  // ============================================================
+  // Auth API
+  // ============================================================
+  signOut: (): Promise<void> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.AUTH_SIGN_OUT);
+  },
+
+  // ============================================================
+  // Screener API
+  // ============================================================
+  screenerScan: (request?: ScreenerScanRequest) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SCREENER_SCAN, request);
+  },
+
+  // ============================================================
+  // Watchlist API
+  // ============================================================
+  getWatchlist: (): Promise<string[]> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.WATCHLIST_GET);
+  },
+
+  addToWatchlist: (symbol: string): Promise<string[]> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.WATCHLIST_ADD, symbol);
+  },
+
+  removeFromWatchlist: (symbol: string): Promise<string[]> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.WATCHLIST_REMOVE, symbol);
   },
 };
 

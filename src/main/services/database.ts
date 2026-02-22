@@ -376,6 +376,46 @@ export class DatabaseService {
     updateConv.run(message.conversationId);
   }
 
+  // ---- Watchlist Operations ----
+
+  getWatchlist(): string[] {
+    const rows = this.db
+      .prepare('SELECT symbol FROM watchlist ORDER BY tier ASC, symbol ASC')
+      .all() as Array<{ symbol: string }>;
+    return rows.map((r) => r.symbol);
+  }
+
+  addToWatchlist(symbol: string): void {
+    const upper = symbol.trim().toUpperCase();
+    this.db
+      .prepare('INSERT OR IGNORE INTO watchlist (symbol, tier, added_at) VALUES (?, 2, ?)')
+      .run(upper, Date.now());
+  }
+
+  removeFromWatchlist(symbol: string): void {
+    this.db
+      .prepare('DELETE FROM watchlist WHERE symbol = ?')
+      .run(symbol.trim().toUpperCase());
+  }
+
+  seedWatchlistIfEmpty(defaults: Array<{ symbol: string; tier: number }>): void {
+    const count = (
+      this.db.prepare('SELECT COUNT(*) as n FROM watchlist').get() as { n: number }
+    ).n;
+    if (count > 0) return;
+
+    const insert = this.db.prepare(
+      'INSERT OR IGNORE INTO watchlist (symbol, tier, added_at) VALUES (?, ?, ?)'
+    );
+    const now = Date.now();
+    const seed = this.db.transaction(() => {
+      for (const { symbol, tier } of defaults) {
+        insert.run(symbol.toUpperCase(), tier, now);
+      }
+    });
+    seed();
+  }
+
   // ---- Screenshot Operations ----
 
   createScreenshot(data: {
