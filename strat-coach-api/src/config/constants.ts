@@ -37,9 +37,17 @@ export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 
 /**
  * Claude model configuration
+ *
+ * Model routing strategy:
+ * - Vision requests (chart screenshots): Sonnet — better image understanding
+ * - Text-only requests: Haiku — ~75% cheaper, quality is sufficient with the
+ *   full coaching system prompt providing all the domain context
  */
 export const CLAUDE_CONFIG = {
-  model: 'claude-sonnet-4-20250514',
+  models: {
+    vision: 'claude-sonnet-4-6',        // Latest Sonnet — used when images present
+    text: 'claude-haiku-4-5-20251001',  // Latest Haiku — used for text-only
+  },
   maxTokens: 4096,
   temperature: 1.0,
 } as const;

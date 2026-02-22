@@ -1,5 +1,12 @@
 {
   "methodology_version": "1.0.0",
-  "last_updated": "2026-02-15",
-  "description": "The Strat trading methodology system prompts"
+  "last_updated": "2026-02-14",
+  "source": "Phil's /Users/phil/Trading workspace",
+  "changes": [
+    "Initial import of THE-STRAT-GUARDRAILS.md (canonical Rob Smith methodology)",
+    "Trading coach personality from Phil's CLI workspace",
+    "Socratic teaching method: ask first, confirm second",
+    "Direct, challenging communication style"
+  ],
+  "notes": "This version is embedded in the app bundle. Updates distributed via Electron auto-updater."
 }

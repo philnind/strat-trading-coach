@@ -5,7 +5,12 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
 import { ClaudeService } from '../services/claude.js';
-import { REQUEST_CONSTRAINTS, IMAGE_CONSTRAINTS } from '../config/constants.js';
+import { REQUEST_CONSTRAINTS, IMAGE_CONSTRAINTS, CLAUDE_CONFIG } from '../config/constants.js';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Chat stream request body
@@ -35,27 +40,20 @@ async function loadSystemPrompt(): Promise<string> {
     return systemPrompt;
   }
 
-  try {
-    // TODO: Load actual coaching methodology from files when Phil provides them
-    // const coachingDir = path.join(__dirname, '../../coaching');
+  const coachingDir = join(__dirname, '../../coaching');
+  const coachingPromptPath = join(coachingDir, 'TRADING-COACH-SYSTEM-PROMPT.md');
+  const guardrailsPath = join(coachingDir, 'THE-STRAT-GUARDRAILS.md');
 
-    systemPrompt = `You are The Strat Coach, an AI trading assistant specialized in The Strat methodology.
-
-Your role is to:
-1. Analyze chart screenshots and identify Strat patterns (1s, 2s, 3s)
-2. Evaluate Full Timeframe Continuity (FTFC) alignment
-3. Provide risk management guidance
-4. Teach The Strat principles
-5. Coach traders on proper Strat-based decision making
-
-Always be direct, professional, and focused on The Strat methodology.`;
-
-    return systemPrompt;
-  } catch (error) {
-    console.error('Failed to load system prompt:', error);
-    // Return minimal prompt as fallback
-    return 'You are an AI trading assistant.';
+  if (existsSync(coachingPromptPath) && existsSync(guardrailsPath)) {
+    const coachingPrompt = readFileSync(coachingPromptPath, 'utf-8');
+    const guardrails = readFileSync(guardrailsPath, 'utf-8');
+    systemPrompt = `${coachingPrompt}\n\n---\n\n${guardrails}`;
+  } else {
+    console.error(`[chat] Coaching files not found in ${coachingDir} — using fallback prompt`);
+    systemPrompt = 'You are an AI trading assistant specialized in The Strat methodology.';
   }
+
+  return systemPrompt;
 }
 
 /**
@@ -74,11 +72,11 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
   server.log.info('🤖 Claude service initialized');
 
   /**
-   * POST /api/v1/chat/stream
+   * POST /chat/stream  (full path: /api/v1/chat/stream via plugin prefix)
    * Stream a chat completion via SSE
    */
   server.post<{ Body: ChatStreamBody }>(
-    '/api/v1/chat/stream',
+    '/chat/stream',
     {
       preValidation: [server.authenticate],
       schema: {
@@ -135,6 +133,7 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
     },
     async (request: FastifyRequest<{ Body: ChatStreamBody }>, reply: FastifyReply) => {
       const { message, conversationHistory, images, options, conversationId } = request.body;
+      const selectedModel = images?.length ? CLAUDE_CONFIG.models.vision : CLAUDE_CONFIG.models.text;
       const userId = request.user!.id;
       const userTier = request.user!.subscription_tier;
 
@@ -188,8 +187,7 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 
       // 5. Send stream_start event
       reply.raw.write(
-        `data: ${JSON.stringify({
-          type: 'stream_start',
+        `event: stream_start\ndata: ${JSON.stringify({
           conversationId: conversationId || null,
           timestamp: new Date().toISOString(),
         })}\n\n`
@@ -207,17 +205,18 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
           images,
           maxTokens: options?.maxTokens,
           systemPrompt,
+          model: selectedModel,
         },
         {
           onStart: (messageId) => {
             reply.raw.write(
-              `data: ${JSON.stringify({ type: 'message_start', messageId })}\n\n`
+              `event: message_start\ndata: ${JSON.stringify({ messageId })}\n\n`
             );
           },
           onDelta: (text) => {
             fullResponse += text;
             reply.raw.write(
-              `data: ${JSON.stringify({ type: 'content_delta', text })}\n\n`
+              `event: content_delta\ndata: ${JSON.stringify({ delta: text })}\n\n`
             );
           },
           onComplete: async (usage) => {
@@ -232,7 +231,7 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
                 outputTokens: usage.outputTokens,
                 cacheReadTokens: usage.cacheReadTokens,
                 cacheCreationTokens: usage.cacheCreationTokens,
-                model: 'claude-sonnet-4-20250514',
+                model: selectedModel,
                 requestType: images?.length ? 'vision' : 'chat',
                 success: true,
                 latencyMs,
@@ -243,9 +242,13 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 
               // Send completion event
               reply.raw.write(
-                `data: ${JSON.stringify({
-                  type: 'stream_complete',
-                  usage,
+                `event: stream_complete\ndata: ${JSON.stringify({
+                  usage: {
+                    input_tokens: usage.inputTokens,
+                    output_tokens: usage.outputTokens,
+                    cache_read_tokens: usage.cacheReadTokens,
+                    cache_creation_tokens: usage.cacheCreationTokens,
+                  },
                   tokensRemaining: updatedQuota.tokensRemaining,
                   timestamp: new Date().toISOString(),
                 })}\n\n`
@@ -254,9 +257,13 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
               server.log.error({ err: error }, 'Failed to record usage');
               // Send completion even if usage recording failed
               reply.raw.write(
-                `data: ${JSON.stringify({
-                  type: 'stream_complete',
-                  usage,
+                `event: stream_complete\ndata: ${JSON.stringify({
+                  usage: {
+                    input_tokens: usage.inputTokens,
+                    output_tokens: usage.outputTokens,
+                    cache_read_tokens: usage.cacheReadTokens,
+                    cache_creation_tokens: usage.cacheCreationTokens,
+                  },
                   timestamp: new Date().toISOString(),
                 })}\n\n`
               );
@@ -278,8 +285,7 @@ export const chatRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 
             // Send error event
             reply.raw.write(
-              `data: ${JSON.stringify({
-                type: 'stream_error',
+              `event: stream_error\ndata: ${JSON.stringify({
                 error: error.message,
                 code: errorCode,
                 timestamp: new Date().toISOString(),

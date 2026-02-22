@@ -40,6 +40,7 @@ export interface StreamChatRequest {
   }>;
   maxTokens?: number;
   systemPrompt?: string;
+  model?: string;
 }
 
 /**
@@ -79,7 +80,7 @@ export class ClaudeService {
     request: StreamChatRequest,
     callbacks: StreamCallbacks
   ): Promise<void> {
-    const { message, conversationHistory, images, maxTokens, systemPrompt } = request;
+    const { message, conversationHistory, images, maxTokens, systemPrompt, model } = request;
 
     // Build content parts (images + text)
     const contentParts: Anthropic.ContentBlockParam[] = [];
@@ -151,7 +152,7 @@ export class ClaudeService {
     try {
       // Create streaming request
       const stream = await this.client.messages.create({
-        model: CLAUDE_CONFIG.model,
+        model: model ?? CLAUDE_CONFIG.models.text,
         max_tokens: maxTokens || CLAUDE_CONFIG.maxTokens,
         temperature: CLAUDE_CONFIG.temperature,
         system: systemBlocks.length > 0 ? systemBlocks : undefined,
@@ -219,7 +220,7 @@ export class ClaudeService {
     try {
       // Try a minimal API call to verify credentials
       await this.client.messages.create({
-        model: CLAUDE_CONFIG.model,
+        model: CLAUDE_CONFIG.models.text,
         max_tokens: 1,
         messages: [{ role: 'user', content: 'test' }],
       });
