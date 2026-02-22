@@ -32,18 +32,27 @@ interface AuthPluginOptions {
 
 /**
  * Get Clerk JWKS URL from publishable key
+ *
+ * Publishable key format: pk_test_BASE64 or pk_live_BASE64
+ * The BASE64 portion decodes to the instance domain with a trailing '$',
+ * e.g. "happy-lion-5.clerk.accounts.dev$"
  */
 function getJwksUrl(publishableKey: string): string {
-  // Extract instance ID from publishable key (format: pk_test_xxxxx or pk_live_xxxxx)
   const parts = publishableKey.split('_');
   if (parts.length < 3) {
     throw new Error('Invalid Clerk publishable key format');
   }
 
-  const env = parts[1]; // 'test' or 'live'
-  const instanceId = parts[2];
+  // Decode the base64 instance identifier to get the actual domain
+  const instanceB64 = parts[2];
+  if (!instanceB64) {
+    throw new Error('Invalid Clerk publishable key format');
+  }
+  const decoded = Buffer.from(instanceB64, 'base64').toString('utf-8');
+  // Clerk appends '$' as a sentinel — strip it
+  const domain = decoded.replace(/\$$/, '');
 
-  return `https://${env}-${instanceId}.clerk.accounts.dev/.well-known/jwks.json`;
+  return `https://${domain}/.well-known/jwks.json`;
 }
 
 /**
@@ -72,7 +81,37 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
 
       return payload as unknown as ClerkJWTPayload;
     } catch (error) {
+      server.log.error({ err: error }, '[Auth] JWT verification failed');
       throw new Error('Invalid or expired token');
+    }
+  }
+
+  /**
+   * Fetch user email from Clerk API using secret key.
+   * Needed because the default session token does not include the email claim.
+   */
+  async function fetchClerkUserEmail(clerkUserId: string): Promise<string> {
+    const secretKey = server.config.CLERK_SECRET_KEY || process.env.CLERK_SECRET_KEY;
+    if (!secretKey) {
+      return `${clerkUserId}@clerk.invalid`;
+    }
+    try {
+      const resp = await fetch(`https://api.clerk.com/v1/users/${clerkUserId}`, {
+        headers: { Authorization: `Bearer ${secretKey}` },
+      });
+      if (!resp.ok) {
+        server.log.warn(`[Auth] Clerk API returned ${resp.status} for user ${clerkUserId}`);
+        return `${clerkUserId}@clerk.invalid`;
+      }
+      const data = await resp.json() as {
+        email_addresses?: Array<{ email_address: string; verification?: { status: string } }>;
+      };
+      const primary = data.email_addresses?.find(e => e.verification?.status === 'verified')
+        ?? data.email_addresses?.[0];
+      return primary?.email_address ?? `${clerkUserId}@clerk.invalid`;
+    } catch (err) {
+      server.log.warn({ err }, '[Auth] Failed to fetch email from Clerk API');
+      return `${clerkUserId}@clerk.invalid`;
     }
   }
 
@@ -115,12 +154,14 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
       let user = await server.db.getUserByClerkId(payload.sub);
 
       if (!user) {
-        // Create new user on first login
+        // The default Clerk session token doesn't include an email claim.
+        // Fall back to the Clerk Users API to retrieve it.
+        const email = payload.email ?? await fetchClerkUserEmail(payload.sub);
         user = await server.db.createUser({
           clerk_user_id: payload.sub,
-          email: payload.email,
+          email,
         });
-        server.log.info(`Created new user: ${user.id} (${user.email})`);
+        server.log.info(`[Auth] Created new user: ${user.id} (${user.email})`);
       }
 
       // Attach user to request

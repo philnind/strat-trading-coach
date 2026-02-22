@@ -22,6 +22,9 @@ import usageRoutes from './routes/usage.js';
  */
 
 const server = Fastify({
+  // Allow up to 20MB body for multi-timeframe chart screenshot payloads
+  // (3 screenshots × ~2MB JPEG base64 each, with headroom)
+  bodyLimit: 20 * 1024 * 1024,
   logger: {
     level: process.env.LOG_LEVEL || 'info',
     transport: process.env.NODE_ENV === 'development'

@@ -14,7 +14,7 @@ export const usageRoutes: FastifyPluginAsync = async (server: FastifyInstance) =
    * Get current billing period usage for authenticated user
    */
   server.get(
-    '/api/v1/usage/current',
+    '/usage/current',
     {
       preValidation: [server.authenticate],
     },
